@@ -11,3 +11,4 @@ env/
 *.log
 docker-data/
 EOF
+generate_key.py
