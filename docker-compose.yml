@@ -1,0 +1,91 @@
+services:
+  platform-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: platform_db
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+    volumes:
+      - platform_db_data:/var/lib/postgresql/data
+    networks:
+      - sentinel-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 5
+
+  identity-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: identity_db
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+    volumes:
+      - identity_db_data:/var/lib/postgresql/data
+    networks:
+      - sentinel-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 5
+
+  trade-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: trade_db
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+    volumes:
+      - trade_db_data:/var/lib/postgresql/data
+    networks:
+      - sentinel-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 5
+
+  platform-api:
+    build: ./platform-api
+    ports: ["8000:8000"]
+    env_file: .env
+    depends_on:
+      platform-db:
+        condition: service_healthy
+    networks:
+      - sentinel-internal
+    command: sh -c 'alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload'
+
+  identity-service:
+    build: ./identity-service
+    ports: ["8001:8001"]
+    env_file: .env
+    depends_on:
+      identity-db:
+        condition: service_healthy
+      platform-api:
+        condition: service_started
+    networks:
+      - sentinel-internal
+    command: sh -c 'alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload'
+
+  trade-engine:
+    build: ./trade-engine
+    ports: ["8002:8002"]
+    env_file: .env
+    depends_on:
+      trade-db:
+        condition: service_healthy
+      identity-service:
+        condition: service_started
+    networks:
+      - sentinel-internal
+    command: sh -c 'alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload'
+
+volumes:
+  platform_db_data:
+  identity_db_data:
+  trade_db_data:
+
+networks:
+  sentinel-internal:
+    driver: bridge
