@@ -12,3 +12,4 @@ env/
 docker-data/
 EOF
 generate_key.py
+test-keys
