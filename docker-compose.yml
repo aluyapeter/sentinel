@@ -48,6 +48,8 @@ services:
     build: ./platform-api
     ports: ["8000:8000"]
     env_file: .env
+    volumes:
+      - ./platform-api:/app
     depends_on:
       platform-db:
         condition: service_healthy
@@ -59,6 +61,8 @@ services:
     build: ./identity-service
     ports: ["8001:8001"]
     env_file: .env
+    volumes:
+      - ./identity-service:/app
     depends_on:
       identity-db:
         condition: service_healthy
@@ -72,6 +76,8 @@ services:
     build: ./trade-engine
     ports: ["8002:8002"]
     env_file: .env
+    volumes:
+      - ./trade-engine:/app
     depends_on:
       trade-db:
         condition: service_healthy
